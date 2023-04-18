@@ -6,6 +6,7 @@ import time
 import utils
 import tf
 from numpy.linalg import norm
+from sklearn.linear_model import LinearRegression
 
 from geometry_msgs.msg import PoseArray, PoseStamped
 from visualization_msgs.msg import Marker
@@ -19,16 +20,14 @@ class PurePursuit(object):
         self.odom_topic       = rospy.get_param("~odom_topic")
         self.lookahead        = 1 #should be modified, this is a guess
         self.speed            = 1 #to be modified probably
-        self.wheelbase_length = 0.1 # i have no clue what this is--is it the width of our robot?
+        self.wheelbase_length = 0.35 # this is for ackermann steering
         self.trajectory  = utils.LineTrajectory("/followed_trajectory")
         self.traj_sub = rospy.Subscriber("/trajectory/current", PoseArray, self.trajectory_callback, queue_size=1)
         self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=1)
+        self.line_pub = rospy.Publisher("/wall", Marker, queue_size=1)
         
         self.pose_sub = rospy.Subscriber("/pf/pose/odom", Odometry, queue_size = 1)
-        
-        self.pose_x = self.pose_sub.pose.position.x
-        self.pose_y = self.pose_sub.pose.position.y
-        self.orientation = self.pose_sub.pose.orientation #this is given in quaternians
+
         
         #should get rid of this when doing pure pursuit?
         self.K_P = 0.25
@@ -43,6 +42,19 @@ class PurePursuit(object):
         print "Receiving new trajectory:", len(msg.poses), "points"
         self.trajectory.clear()
         self.trajectory.fromPoseArray(msg)
+        
+        #dummy trajectory
+        self.trajectory=[(0,0), (10,0)]
+        
+        #visualize the dummy trajectory
+        VisualizationTools.plot_line(np.array([0,10]), np.array([0,0]), self.line_pub, frame="/laser")
+        
+        self.pose_x = msg.pose.position.x
+        self.pose_y = msg.pose.position.y
+        self.orientation = msg.pose.orientation #this is given in quaternians
+        
+        self.driving_decision()
+        
         self.trajectory.publish_viz(duration=0.0)
     
     def driving_decision(self):
@@ -50,6 +62,7 @@ class PurePursuit(object):
         ack_stamped.header = Header(stamp=rospy.Time.now())
         ack_stamped.drive.speed=self.speed
         
+        #error is distance away from desired path
         error=self.calc_perp_dist(self.trajectory.points[0][0], self.trajectory.points[0][1], self.trajectory.points[-1][0], self.trajectory.points[-1][1])
         
         #will be replaced by pure pursuit later
@@ -63,7 +76,8 @@ class PurePursuit(object):
         
         return ack_stamped
     
-        self.drive_pub.publish(ack_stamped)
+        #remove this and have it publish in trajectory callback when receiving a trajectory
+        self.drive_pub.publish(ack_stamped)s
         
     def circle_path_intersect(self):
         Q = np.array([self.pose_x, self.pose_y]) # Centre of circle
@@ -113,14 +127,14 @@ class PurePursuit(object):
                 else:
                     t=t1
             
-            if not (0 <= t1 <= 1 or 0 <= t2 <= 1): #neither on line segment--segment is inside the circle
+            if not (0 <= t1 and t1 <= 1) or (0 <= t2 and t2 <= 1): #neither on line segment--segment is inside the circle
                 #return end
                 return self.trajectory.points[-1][0], self.trajectory.points[-1][1]
                 
-            elif (0 <= t2 <= 1): #t1 only on line segment
+            elif 0 <= t2 and t2 <= 1: #t1 only on line segment
                 t=t2
                 
-            elif (0 <= t2 <= 1) #t2 only on line segment
+            elif 0 <= t2 and t2 <= 1: #t2 only on line segment
                 t=t1
                 
             return P1 + t * V
@@ -133,7 +147,7 @@ class PurePursuit(object):
         
         return np.cross(line_end-line_start,pose-line_start)/norm(line_end-line_start)
 
-    def calc_distance(x1, y1, x2, y2)
+    def calc_distance(x1, y1, x2, y2):
     #calculates distance between (x1, y1) and (x2, y2)
         p1=np.array([x1, y1])
         p2=np.array([x2, y2])
@@ -143,4 +157,5 @@ class PurePursuit(object):
 if __name__=="__main__":
     rospy.init_node("pure_pursuit")
     pf = PurePursuit()
+    pf.driving_decision() #remove this line when implementing all this with a trajectory
     rospy.spin()
