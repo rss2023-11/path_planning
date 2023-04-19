@@ -72,7 +72,7 @@ class PathPlan(object):
         self.map_origin = pose_to_xytheta(msg.info.origin)
         rospy.loginfo("LENGTH OF MAP WIDTH")
         rospy.loginfo(len(self.map))
-        rospy.loginfo("LENGTH OF MAP HEIGHT")
+        rospy.loginfo("LENGTH OF MAP HEIGHT, MAP INITIALIZED")
         rospy.loginfo(len(self.map[0]))
 
     def odom_cb(self, msg):
@@ -101,8 +101,6 @@ class PathPlan(object):
         map: The occupancy grid of the map, in map coordinates
         
         """
-        rospy.loginfo("PLAN PATH START")
-        rospy.loginfo(self.current_location)
         # Step 1: Transform the start point and end point to map coordinates
         def translate(point, dx, dy):
             return [point[0] + dx, point[1] + dy]
@@ -123,24 +121,30 @@ class PathPlan(object):
         def transform_from_map_coords(point):
             scaled = dilate(point, self.map_resolution)
             rotated = rotate(scaled, self.map_origin[2])
-            translated = translate(point, self.map_origin[0], self.map_origin[1])
+            translated = translate(rotated, self.map_origin[0], self.map_origin[1])
             return translated
 
-
-        path_planning = rrt.RRT_Connect(self.current_location, self.goal_location, self.map)
-        path = path_planning.get_path(max_iter=500, delta=100)
-        rospy.loginfo("LENGTH OF PATH")
-        rospy.loginfo(len(path))
+        start = transform_to_map_coords(self.current_location)
+        goal = transform_to_map_coords(self.goal_location)
+        # rospy.loginfo("Map coordinates:")
+        # rospy.loginfo(start)
+        # rospy.loginfo(goal)
+        path_planning = rrt.RRT_Connect(start, goal, self.map)
+        path = path_planning.get_path(max_iter=2000, delta=10)
+        # rospy.loginfo("LENGTH OF PATH")
+        # rospy.loginfo(len(path))
         new_traj = LineTrajectory(viz_namespace="debug_traj")
         for point in path:
-            print("PATH", point)
+            # print("PATH", point)
             new_traj.addPoint(*transform_from_map_coords(point))
         self.trajectory = new_traj # Delay actually setting till the new trajectory is complete for threading reasons
 
         # publish trajectory
-        rospy.loginfo("TRAJECTORY: ")
-        rospy.loginfo(self.trajectory)
-        rospy.loginfo(self.trajectory.toPoseArray())
+        # rospy.loginfo("TRAJECTORY: ")
+        # rospy.loginfo(path[0])
+        # rospy.loginfo(path[-1])
+        # rospy.loginfo(len(self.trajectory.toPoseArray()))
+        # rospy.loginfo(self.trajectory.toPoseArray())
         self.traj_pub.publish(self.trajectory.toPoseArray())
 
         # visualize trajectory Markers

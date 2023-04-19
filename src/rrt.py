@@ -27,9 +27,6 @@ class RRT_Connect:
         """
         Check that the position on the map is occupied
         """
-        # print("RRT ")
-        # print(x)
-        # print(y)
         return self.map[int(round(y))][int(round(x))]
 
     def get_random_point(self):
