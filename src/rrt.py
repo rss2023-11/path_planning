@@ -27,7 +27,10 @@ class RRT_Connect:
         """
         Check that the position on the map is occupied
         """
-        return self.map[round(y)][round(x)]
+        # print("RRT ")
+        # print(x)
+        # print(y)
+        return self.map[int(round(y))][int(round(x))]
 
     def get_random_point(self):
         rand_x = np.random.uniform(*self.x_range)
@@ -113,7 +116,7 @@ class RRT_Connect:
                 self.path = path
                 return
             
-    def get_path(self, max_iter=10000, delta=0.1):
+    def get_path(self, max_iter=10000, delta=10):
         for i in range(max_iter):
             if self.path is not None:
                 return self.path
@@ -121,6 +124,7 @@ class RRT_Connect:
                 self.extend_start_tree(delta)
             else:
                 self.extend_goal_tree(delta)
+        print("PATH", self.path)
         return self.path
 
 
