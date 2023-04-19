@@ -11,6 +11,30 @@ from utils import LineTrajectory
 
 import rrt
 
+def pose_to_xytheta(pose):
+    """
+    Converts a rospy Pose object to (x, y, theta) format.
+    
+    Args:
+        pose (geometry_msgs.msg.Pose): A ROS Pose message.
+    
+    Returns:
+        tuple: A tuple (x, y, theta) representing the pose.
+    (Thanks ChatGPT)
+    """
+    x = pose.position.x
+    y = pose.position.y
+    z = pose.position.z
+
+    qx = pose.orientation.x
+    qy = pose.orientation.y
+    qz = pose.orientation.z
+    qw = pose.orientation.w
+
+    # Calculate theta (yaw) from quaternion
+    yaw = math.atan2(2 * (qw*qz + qx*qy), 1 - 2*(qy*qy + qz*qz))
+
+    return (x, y, yaw)
 
 class PathPlan(object):
     """ Listens for goal pose published by RViz and uses it to plan a path from
@@ -45,7 +69,7 @@ class PathPlan(object):
         map = msg.data
         self.map = [map[s:s + width] for s in range(0, len(map), width)] # Convert to 2D
         self.map_resolution = msg.info.resolution
-        self.map_origin = msg.info.origin
+        self.map_origin = pose_to_xytheta(msg.info.origin)
         rospy.loginfo("LENGTH OF MAP WIDTH")
         rospy.loginfo(len(self.map))
         rospy.loginfo("LENGTH OF MAP HEIGHT")
@@ -107,9 +131,10 @@ class PathPlan(object):
         path = path_planning.get_path(max_iter=500, delta=100)
         rospy.loginfo("LENGTH OF PATH")
         rospy.loginfo(len(path))
-        new_traj = LineTrajectory()
+        new_traj = LineTrajectory(viz_namespace="debug_traj")
         for point in path:
-            new_traj.addPoint(transform_from_map_coords(point))
+            print("PATH", point)
+            new_traj.addPoint(*transform_from_map_coords(point))
         self.trajectory = new_traj # Delay actually setting till the new trajectory is complete for threading reasons
 
         # publish trajectory

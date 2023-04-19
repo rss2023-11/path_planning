@@ -37,7 +37,7 @@ class BuildTrajectory(object):
         point = Point()
         point.x = msg.point.x
         point.y = msg.point.y
-        self.trajectory.addPoint(point)
+        self.trajectory.addPoint(point.x, point.y)
         self.data_points.append(point)
         self.mark_pt(self.trajectory_points, (0,1,0), self.data_points)
         if self.count > 2:

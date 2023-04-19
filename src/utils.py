@@ -66,9 +66,9 @@ class LineTrajectory(object):
         else:
             return (1.0-t)*self.distances[i] + t*self.distances[i+1]
 
-    def addPoint(self, point):
-        print "adding point to trajectory:", point.x, point.y
-        self.points.append((point.x, point.y))
+    def addPoint(self, point_x, point_y):
+        print "adding point to trajectory:", point_x, point_y
+        self.points.append((point_x, point_y))
         self.update_distances()
         self.mark_dirty()
 
@@ -186,7 +186,7 @@ class LineTrajectory(object):
 
     def publish_trajectory(self, duration=0.0):
         should_publish = len(self.points) > 1
-        if self.visualize and self.traj_pub.get_num_connections() > 0:
+        if self.visualize:# and self.traj_pub.get_num_connections() > 0:
             print "Publishing trajectory"
             marker = Marker()
             marker.header = self.make_header("/map")
