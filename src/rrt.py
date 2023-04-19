@@ -10,7 +10,7 @@ class Node:
         self.parent = None
 
 class RRT_Connect:
-    def __init__(self, start, goal, obstacle_list):
+    def __init__(self, start, goal, map):
         # Initialize tree for start and goal
         self.start_node = Node(start[0], start[1])
         self.goal_node = Node(goal[0], goal[1])
@@ -18,20 +18,22 @@ class RRT_Connect:
         self.goal_tree = [self.goal_node]
         self.x_range = (min(start[0], goal[0]), max(start[0], goal[0]))
         self.y_range = (min(start[1], goal[1]), max(start[1], goal[1]))
-        self.obstacle_list = obstacle_list
+        self.map = map
 
         self.path = None
 
 
-    def is_collision_free(self, x, y):
-        return all([(x - obstacle[0]) ** 2 + (y - obstacle[1]) ** 2 > obstacle[2] ** 2
-                    for obstacle in self.obstacle_list])
+    def is_occupied(self, x, y):
+        """
+        Check that the position on the map is occupied
+        """
+        return self.map[round(y)][round(x)]
 
     def get_random_point(self):
         rand_x = np.random.uniform(*self.x_range)
         rand_y = np.random.uniform(*self.y_range)
 
-        while not self.is_collision_free(rand_x, rand_y):
+        while self.is_occupied(rand_x, rand_y):
             rand_x = np.random.uniform(*self.x_range)
             rand_y = np.random.uniform(*self.y_range)
 
@@ -50,7 +52,7 @@ class RRT_Connect:
         # Extend start tree towards random point
         new_start_node = Node(nearest_start_node.x + delta*(rand_x - nearest_start_node.x)/dist,
                               nearest_start_node.y + delta*(rand_y - nearest_start_node.y)/dist)
-        if not self.is_collision_free(new_start_node.x, new_start_node.y):
+        if self.is_occupied(new_start_node.x, new_start_node.y):
             return
         
         new_start_node.parent = nearest_start_node
@@ -87,7 +89,7 @@ class RRT_Connect:
         new_goal_node = Node(nearest_goal_node.x + delta*(rand_x - nearest_goal_node.x)/dist,
                               nearest_goal_node.y + delta*(rand_y - nearest_goal_node.y)/dist)
         
-        if not self.is_collision_free(new_goal_node.x, new_goal_node.y):
+        if self.is_occupied(new_goal_node.x, new_goal_node.y):
             return
         
         new_goal_node.parent = nearest_goal_node
@@ -122,35 +124,6 @@ class RRT_Connect:
         return self.path
 
 
-# Define obstacle coordinates
-obstacle_list = [(3, 3, 1), (3, 5, 0.5), (8, 3, 1), (6, 6, 2)]
-
-# Define start and goal coordinates
-start = (0, 0)
-goal = (9, 9)
-
-# Call RRT Connect function
-rrt = RRT_Connect(start, goal, obstacle_list)
-path = rrt.get_path()
-
-# Plot trees
-for node in rrt.start_tree:
-    if node.parent is not None:
-        plt.plot((node.x, node.parent.x), (node.y, node.parent.y), 'b')
-
-for node in rrt.goal_tree:
-    if node.parent is not None:
-        plt.plot((node.x, node.parent.x), (node.y, node.parent.y), 'b')
-
-# Plot path and obstacles
-if path:
-    path = np.array(path)
-    plt.plot(path[:,0], path[:,1], 'r')
-    plt.plot(start[0], start[1], 'bo')
-    plt.plot(goal[0], goal[1], 'yo')
-for obstacle in obstacle_list:
-    circle = plt.Circle(obstacle[:2], obstacle[2], color='k')
-    plt.gcf().gca().add_artist(circle)
-    plt.xlim(0, 10)
-    plt.ylim(0, 10)
-plt.show()
+def get_path(start_point, end_point, map):
+    rrt = RRT_Connect(start_point, end_point, map)
+    return rrt.get_path()
