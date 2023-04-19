@@ -16,6 +16,7 @@ from nav_msgs.msg import Odometry
 class PurePursuit(object):
     """ Implements Pure Pursuit trajectory tracking with a fixed lookahead and speed.
     """
+    #testing if christina's git works
     def __init__(self):
         self.odom_topic       = rospy.get_param("~odom_topic")
         self.lookahead        = 1 #should be modified, this is a guess
