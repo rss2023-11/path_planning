@@ -126,25 +126,14 @@ class PathPlan(object):
 
         start = transform_to_map_coords(self.current_location)
         goal = transform_to_map_coords(self.goal_location)
-        # rospy.loginfo("Map coordinates:")
-        # rospy.loginfo(start)
-        # rospy.loginfo(goal)
         path_planning = rrt.RRT_Connect(start, goal, self.map)
-        path = path_planning.get_path(max_iter=2000, delta=10)
-        # rospy.loginfo("LENGTH OF PATH")
-        # rospy.loginfo(len(path))
+        path = path_planning.get_path(max_iter=5000, delta=1)
         new_traj = LineTrajectory(viz_namespace="debug_traj")
         for point in path:
-            # print("PATH", point)
             new_traj.addPoint(*transform_from_map_coords(point))
         self.trajectory = new_traj # Delay actually setting till the new trajectory is complete for threading reasons
 
         # publish trajectory
-        # rospy.loginfo("TRAJECTORY: ")
-        # rospy.loginfo(path[0])
-        # rospy.loginfo(path[-1])
-        # rospy.loginfo(len(self.trajectory.toPoseArray()))
-        # rospy.loginfo(self.trajectory.toPoseArray())
         self.traj_pub.publish(self.trajectory.toPoseArray())
 
         # visualize trajectory Markers
