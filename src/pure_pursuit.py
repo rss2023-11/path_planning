@@ -60,7 +60,7 @@ class PurePursuit:
 
             # If the distance is less than the target distance, find a new target point
             if distance < self.lookahead:
-                self.target_point.position = self.find_target_point(waypoints)
+                self.target_point.position = self.find_target_point(self.trajectory)
                 
             rospy.logwarn("calculating distance to target. current pos then target pos") #print statement
             rospy.logwarn(self.current_position) #print statement
