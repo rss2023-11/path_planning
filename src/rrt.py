@@ -1,6 +1,4 @@
-# Import required libraries
-import numpy as np
-import matplotlib.pyplot as plt
+import random
 
 # Define class for RRT node
 class Node:
@@ -16,9 +14,11 @@ class RRT_Connect:
         self.goal_node = Node(goal[0], goal[1])
         self.start_tree = [self.start_node]
         self.goal_tree = [self.goal_node]
-        self.x_range = (min(start[0], goal[0]), max(start[0], goal[0]))
-        self.y_range = (min(start[1], goal[1]), max(start[1], goal[1]))
+        self.x_range = (0, len(map[0]))
+        self.y_range = (0, len(map))
         self.map = map
+        self.map_width = len(map[0])
+        self.map_height = len(map)
 
         self.path = None
 
@@ -27,15 +27,15 @@ class RRT_Connect:
         """
         Check that the position on the map is occupied
         """
-        return self.map[int(round(y))][int(round(x))]
+        return self.map[int(y)][int(x)]
 
     def get_random_point(self):
-        rand_x = np.random.uniform(*self.x_range)
-        rand_y = np.random.uniform(*self.y_range)
+        rand_x = random.random() * self.map_width
+        rand_y = random.random() * self.map_height
 
         while self.is_occupied(rand_x, rand_y):
-            rand_x = np.random.uniform(*self.x_range)
-            rand_y = np.random.uniform(*self.y_range)
+            rand_x = random.random() * self.map_width
+            rand_y = random.random() * self.map_height
 
         return rand_x, rand_y
 
@@ -60,8 +60,8 @@ class RRT_Connect:
 
         # Check if new node in start tree is close to any node in goal tree
         for node in self.goal_tree:
-            dist = np.sqrt((new_start_node.x - node.x)**2 + (new_start_node.y - node.y)**2)
-            if dist < delta:
+            dist2 = (new_start_node.x - node.x)**2 + (new_start_node.y - node.y)**2
+            if dist2 < delta ** 2:
                 # Connect trees and return path
                 path = []
                 node1 = new_start_node
@@ -97,8 +97,8 @@ class RRT_Connect:
     
         # Check if new node in goal tree is close to any node in start tree
         for node in self.start_tree:
-            dist = np.sqrt((new_goal_node.x - node.x)**2 + (new_goal_node.y - node.y)**2)
-            if dist < delta:
+            dist2 = (new_goal_node.x - node.x)**2 + (new_goal_node.y - node.y)**2
+            if dist2 < delta ** 2:
                 # Connect trees and return path
                 path = []
                 node1 = node
@@ -121,7 +121,6 @@ class RRT_Connect:
                 self.extend_start_tree(delta)
             else:
                 self.extend_goal_tree(delta)
-        print("PATH", self.path)
         return self.path
 
 
