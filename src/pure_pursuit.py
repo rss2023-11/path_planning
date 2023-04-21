@@ -29,7 +29,7 @@ class PurePursuit:
         self.linear_speed = 1  
         self.max_angular_speed = 0.34  # Maximum angular speed (rad/s)
         self.wheelbase_length = 0.35  # Distance between front and rear axles of car
-        self.trajectory  = utils.LineTrajectory("/followed_trajectory")
+        self.trajectory  = utils.LineTrajectory("/followed_trajectory").toPoseArray().poses
         self.traj_sub = rospy.Subscriber("/trajectory/current", PoseArray, self.trajectory_callback, queue_size=1)
         self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=1)
         
@@ -40,30 +40,26 @@ class PurePursuit:
         self.current_orientation = None
 
         # Define variable to store the target point
-        self.target_point = None
+        self.target_position = None
 
     def define_robot_pose_callback(self, msg):
-        rospy.logwarn("got a pose, going")
+
         self.current_position = msg.pose.pose.position
-        self.orientation = msg.pose.pose.orientation #this is given in quaternians
+        self.orientation = msg.pose.pose.orientation #this is given in quaternions
             
         self.find_target_point(self.trajectory)
-                    
+        rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
         
-        if self.target_point != None:
-
-            distance = math.sqrt((self.current_position.x - self.target_point.position.x)**2 + (self.current_position.y - self.target_point.position.y)**2)
+        if self.target_position:
+            rospy.logwarn("target: {x} , {y}".format(x=repr(self.target_position.x), y=repr(self.target_position.y)))
+            distance = math.sqrt((self.current_position.x - self.target_position.x)**2 + (self.current_position.y - self.target_position.y)**2)
 
             # If the distance is less than the target distance, find a new target point
             if distance < self.lookahead:
-                self.target_point.position = self.find_target_point(waypoints)
-                
-            rospy.logwarn("calculating distance to target. current pos then target pos") #print statement
-            rospy.logwarn(self.current_position) #print statement
-            rospy.logwarn(self.target_point.position) #print statement
+                self.find_target_point(self.trajectory)
 
             # Calculate the steering angle to the target point
-            steering_angle = self.calculate_steering_angle(self.target_point)
+            steering_angle = self.calculate_steering_angle()
             # steering_angle = 0
 
             # Calculate the linear and angular velocities based on the steering angle and maximum speeds
@@ -73,10 +69,12 @@ class PurePursuit:
             # Create an AckermannDriveStamped message with the linear and angular velocities
             ack_stamped = AckermannDriveStamped()
             ack_stamped.drive.speed = linear_velocity
+            # ack_stamped.drive.speed = 0
             ack_stamped.drive.steering_angle = steering_angle
+            # ack_stamped.drive.steering_angle = 0
 
             # Publish the AckermannDriveStamped message
-            rospy.logwarn("publishing to driver") #print statement
+            rospy.logwarn(steering_angle)
             self.drive_pub.publish(ack_stamped)
 
     def find_target_point(self, trajectory):
@@ -85,18 +83,23 @@ class PurePursuit:
         nearest_distance = float('inf')
         nearest_point = None
         
-        for waypoint in trajectory.toPoseArray().poses:
+        # waypoint is a POSE
+        for waypoint in trajectory:
             distance = math.sqrt((waypoint.position.x - self.current_position.x)**2 + (waypoint.position.y - self.current_position.y)**2)
             if distance < nearest_distance:
                 nearest_distance = distance
                 nearest_point = waypoint
+        
+        self.target_position = nearest_point.position
 
-        self.target_point=nearest_point
-                          
-    def calculate_steering_angle(self, target_point):
+        if not nearest_point:
+            rospy.logwarn("no target point found")
+
+
+    def calculate_steering_angle(self):
         # Calculate the steering angle to the target point using Ackermann steering geometry
-        dx = target_point.position.x - self.current_position.x
-        dy = target_point.position.y - self.current_position.y
+        dx = self.target_position.x - self.current_position.x
+        dy = self.target_position.y - self.current_position.y
         alpha = math.atan2(dy, dx)
         distance = math.sqrt(dx**2 + dy**2)
 
@@ -108,10 +111,9 @@ class PurePursuit:
     def trajectory_callback(self, msg): #Fxn will be changed to take in a path message once we have that        
         ''' Clears the currently followed trajectory, and loads the new one from the message
         '''
-        print "Receiving new trajectory:", len(msg.poses), "points"
+        # print("Receiving new trajectory:", len(msg.poses), "points")
         rospy.logwarn("trajectory_callback is running")
-        self.trajectory.clear()
-        self.trajectory.fromPoseArray(msg)
+        self.trajectory = msg.poses
 
 
 if __name__=="__main__":

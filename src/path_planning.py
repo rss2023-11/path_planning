@@ -46,8 +46,9 @@ class PathPlan(object):
         self.trajectory = LineTrajectory("/planned_trajectory")
         self.goal_sub = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.goal_cb, queue_size=10)
         self.traj_pub = rospy.Publisher("/trajectory/current", PoseArray, queue_size=10)
-        self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_cb)
         self.pose_sub = rospy.Subscriber("/initialpose", PoseWithCovarianceStamped, self.initialize_current_location, queue_size=10)
+        self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_cb, queue_size = 10) #pose subscriber--tells you where the robot is
+
 
         self.map = None
         self.map_resolution = None
@@ -70,18 +71,14 @@ class PathPlan(object):
         self.map = [map[s:s + width] for s in range(0, len(map), width)] # Convert to 2D
         self.map_resolution = msg.info.resolution
         self.map_origin = pose_to_xytheta(msg.info.origin)
-        rospy.loginfo("LENGTH OF MAP WIDTH")
-        rospy.loginfo(len(self.map))
-        rospy.loginfo("LENGTH OF MAP HEIGHT, MAP INITIALIZED")
-        rospy.loginfo(len(self.map[0]))
+        rospy.loginfo("MAP INITIALIZED")
 
     def odom_cb(self, msg):
         """
         given: odometry message Odometry
         function: update current location (don't need to update path, will just update path periodically)
         """
-
-        pass ## REMOVE AND FILL IN ##
+        self.current_location = (msg.pose.pose.position.x, msg.pose.pose.position.y)
 
     def goal_cb(self, msg):
         """
