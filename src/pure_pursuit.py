@@ -52,14 +52,12 @@ class PurePursuit:
             
         self.find_target_point(self.trajectory)
 
-        rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
+        # rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
 
-
-        self.lookahead_pub.publish(self.create_target_marker())
-
-        
         if self.target_position:
-            rospy.logwarn("target: {x} , {y}".format(x=repr(self.target_position.x), y=repr(self.target_position.y)))
+            self.lookahead_pub.publish(self.create_target_marker())
+
+            # rospy.logwarn("target: {x} , {y}".format(x=repr(self.target_position.x), y=repr(self.target_position.y)))
             distance = math.sqrt((self.current_position.x - self.target_position.x)**2 + (self.current_position.y - self.target_position.y)**2)
 
             # If the distance is less than the target distance, find a new target point
@@ -83,7 +81,7 @@ class PurePursuit:
             # ack_stamped.drive.steering_angle = 0
 
             # Publish the AckermannDriveStamped message
-            rospy.logwarn(steering_angle)
+            # rospy.logwarn(steering_angle)
             self.drive_pub.publish(ack_stamped)
 
     def create_target_marker(self):

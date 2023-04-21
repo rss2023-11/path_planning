@@ -70,8 +70,8 @@ class PathPlan(object):
         function: update the current location for initial position
         """
         self.current_location = (msg.pose.pose.position.x, msg.pose.pose.position.y)
-        rospy.loginfo("INITIALIZED")
-        rospy.loginfo(self.current_location)
+        # rospy.loginfo("INITIALIZED")
+        # rospy.loginfo(self.current_location)
 
     def map_cb(self, msg):
         width, height = msg.info.width, msg.info.height
@@ -101,7 +101,7 @@ class PathPlan(object):
         # Invert the binary values in the dilated map to match the ROS occupancy grid convention
         # eroded_map = np.invert(eroded_map)
         # dilated_map = np.invert(dilated_map)
-        rospy.loginfo(dilated_map)
+        # rospy.loginfo(dilated_map)
 
         # Create the OccupancyGrid message and fill in its fields
         map_msg = OccupancyGrid()
@@ -154,7 +154,7 @@ class PathPlan(object):
         #extract x,y position coordinates from message PoseStamped
         self.goal_location = (msg.pose.position.x, msg.pose.position.y)
         #make path with new goal location
-        rospy.loginfo(self.goal_location)
+        # rospy.loginfo(self.goal_location)
         self.plan_path()
 
     def plan_path(self):
