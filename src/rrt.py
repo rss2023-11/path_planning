@@ -16,8 +16,8 @@ class RRT_Connect:
         self.goal_node = Node(goal[0], goal[1])
         self.start_tree = [self.start_node]
         self.goal_tree = [self.goal_node]
-        self.x_range = (min(start[0], goal[0]), max(start[0], goal[0]))
-        self.y_range = (min(start[1], goal[1]), max(start[1], goal[1]))
+        self.x_range = (0, len(map[0]))
+        self.y_range = (0, len(map))
         self.map = map
 
         self.path = None
