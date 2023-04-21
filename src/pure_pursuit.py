@@ -9,7 +9,6 @@ import time
 import utils
 import tf
 from numpy.linalg import norm
-from sklearn.linear_model import LinearRegression
 from visualization_msgs.msg import Marker
 
 from geometry_msgs.msg import PoseArray, PoseStamped
@@ -26,7 +25,7 @@ class PurePursuit:
 
         # Define control parameters
         self.odom_topic = rospy.get_param("~odom_topic")
-        self.lookahead = 0.05 #This is a guess  
+        self.lookahead = 3.0 #This is a guess  
         self.linear_speed = 1  
         self.max_angular_speed = 0.34  # Maximum angular speed (rad/s)
         self.wheelbase_length = 0.35  # Distance between front and rear axles of car
@@ -48,7 +47,8 @@ class PurePursuit:
     def define_robot_pose_callback(self, msg):
 
         self.current_position = msg.pose.pose.position
-        self.orientation = msg.pose.pose.orientation #this is given in quaternions
+        quat = msg.pose.pose.orientation #this is given in quaternions
+        self.orientation = math.atan2(2*(quat.z*quat.w + quat.x*quat.y), 1 - 2*(quat.y**2 + quat.z**2))
             
         self.find_target_point(self.trajectory)
 
@@ -125,7 +125,7 @@ class PurePursuit:
         
         # waypoint is a POSE
         for waypoint in trajectory:
-            distance = math.sqrt((waypoint.position.x - self.current_position.x)**2 + (waypoint.position.y - self.current_position.y)**2)
+            distance = abs((waypoint.position.x - self.current_position.x)**2 + (waypoint.position.y - self.current_position.y)**2 - self.lookahead)
             if distance < nearest_distance:
                 nearest_distance = distance
                 nearest_point = waypoint
@@ -144,8 +144,17 @@ class PurePursuit:
         dy = self.target_position.y - self.current_position.y
         alpha = math.atan2(dy, dx)
         distance = math.sqrt(dx**2 + dy**2)
+        alpha = math.atan2(dy, dx) - self.orientation
+        distance = math.sqrt(dx**2 + dy**2)
 
         steering_angle = math.atan2(2.0 * self.wheelbase_length * math.sin(alpha), distance)
+        return steering_angle
+
+        steering_angle = math.atan2(dy, dx) - self.orientation
+        while steering_angle > math.pi:
+            steering_angle -= 2 * math.pi
+        while steering_angle < -math.pi:
+            steering_angle += 2 * math.pi
 
         return steering_angle
 
