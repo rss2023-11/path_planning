@@ -76,10 +76,11 @@ class PathPlan(object):
         map2d = [map[s:s + width] for s in range(0, len(map), width)] # Convert to 2D
 
         # Define the structuring element for erosion and dilation
-        radius = 10
+        erode_radius = 6
+        dilate_radius = 12
         se = ndimage.generate_binary_structure(2, 2)
-        se_erode = ndimage.iterate_structure(se, 2*radius+1)
-        se_dilate = ndimage.iterate_structure(se, 2*radius+1)
+        se_erode = ndimage.iterate_structure(se, 2*erode_radius+1)
+        se_dilate = ndimage.iterate_structure(se, 2*dilate_radius+1)
         # Define the structuring element for the dilation, which determines the shape and size of the dilation
         # structuring_element = np.array([[0, 1, 0],
         #                         [1, 1, 1],
@@ -92,8 +93,8 @@ class PathPlan(object):
         #                         [0, 0, 1, 0, 0, 0]], dtype=np.uint8)
 
         # Erode + Dilate the obstacles in the map
-        eroded_map = ndimage.binary_erosion(map2d, se_erode).astype(np.uint8)
-        dilated_map = ndimage.binary_dilation(eroded_map, se_dilate).astype(np.uint8)
+        eroded_map = ndimage.binary_erosion(map2d, se_erode)
+        dilated_map = ndimage.binary_dilation(eroded_map, se_dilate)
         # Invert the binary values in the dilated map to match the ROS occupancy grid convention
         # eroded_map = np.invert(eroded_map)
         # dilated_map = np.invert(dilated_map)
@@ -128,12 +129,12 @@ class PathPlan(object):
         rospy.loginfo(len(self.map[0]))
         
         # Visualize the original map and the dilated map side by side
-        # fig, axs = plt.subplots(1, 2)
-        # axs[0].imshow(undilated_map, cmap='gray')
-        # axs[0].set_title('Original Map')
-        # axs[1].imshow(dilated_map, cmap='gray')
-        # axs[1].set_title('Dilated Map')
-        # plt.show()
+        fig, axs = plt.subplots(1, 2)
+        axs[0].imshow(map2d, cmap='gray')
+        axs[0].set_title('Original Map')
+        axs[1].imshow(dilated_map, cmap='gray')
+        axs[1].set_title('Eroded+Dilated Map')
+        plt.show()
 
     def odom_cb(self, msg):
         """
@@ -187,7 +188,7 @@ class PathPlan(object):
         start = transform_to_map_coords(self.current_location)
         goal = transform_to_map_coords(self.goal_location)
         path_planning = rrt.RRT_Connect(start, goal, self.map)
-        path = path_planning.get_path(max_iter=2000, delta=20)
+        path = path_planning.get_path(max_iter=3500, delta=8)
         new_traj = LineTrajectory(viz_namespace="debug_traj")
         if path == None:
             rospy.loginfo("No Path Planned")
