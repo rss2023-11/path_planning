@@ -10,6 +10,7 @@ import utils
 import tf
 from numpy.linalg import norm
 from sklearn.linear_model import LinearRegression
+from visualization_msgs.msg import Marker
 
 from geometry_msgs.msg import PoseArray, PoseStamped
 from nav_msgs.msg import Odometry
@@ -33,7 +34,7 @@ class PurePursuit:
         self.traj_sub = rospy.Subscriber("/trajectory/current", PoseArray, self.trajectory_callback, queue_size=1)
         self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=1)
         
-        # self.lookahead_pub = rospy.Publisher("/lookahead", Pose, queue_size=1)
+        self.lookahead_pub = rospy.Publisher("/lookahead", Marker, queue_size=1)
         
         self.pose_sub = rospy.Subscriber("/pf/pose/odom", Odometry, self.define_robot_pose_callback, queue_size = 1) #pose subscriber--tells you where the robot is
 
@@ -53,7 +54,8 @@ class PurePursuit:
 
         rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
 
-        # self.lookahead_pub.publish(self.target_point)
+
+        self.lookahead_pub.publish(self.create_target_marker())
 
         
         if self.target_position:
@@ -84,6 +86,35 @@ class PurePursuit:
             rospy.logwarn(steering_angle)
             self.drive_pub.publish(ack_stamped)
 
+    def create_target_marker(self):
+        marker = Marker()
+
+        marker.header.frame_id = "/map"
+        marker.header.stamp = rospy.Time.now()
+        marker.type = 2
+        marker.id = 0
+
+        marker.scale.x = 1.0
+        marker.scale.y = 1.0
+        marker.scale.z = 1.0
+
+        # Set the color
+        marker.color.r = 0.0
+        marker.color.g = 1.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0
+
+        marker.pose.position.x = self.target_position.x
+        marker.pose.position.y = self.target_position.y
+        marker.pose.position.z = 0
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+
+        return marker
+
+
     def find_target_point(self, trajectory):
         # Find the nearest waypoint to the current position as the target point
         # This will be modified with the circle formula, but for now this is fine I think
@@ -99,10 +130,12 @@ class PurePursuit:
                 nearest_distance = distance
                 nearest_point = waypoint
         
-        self.target_position = nearest_point.position
-
         if not nearest_point:
             rospy.logwarn("no target point found")
+            self.target_position = None
+        else:
+            self.target_position = nearest_point.position
+
 
 
     def calculate_steering_angle(self):
