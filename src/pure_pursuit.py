@@ -21,7 +21,7 @@ class PurePursuit:
 
         # Define publisher to send drive commands
         self.odom_topic = rospy.get_param("~odom_topic")
-        self.drive_topic = rospy.get_param("path_planning/drive_topic")
+        self.drive_topic = rospy.get_param("~drive_topic", "/drive")
 
         # Define control parameters
         self.lookahead = 3.0 #This is a guess  
@@ -49,7 +49,7 @@ class PurePursuit:
             
         self.find_target_point(self.trajectory)
 
-        # rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
+        rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
 
         if self.target_position:
             self.lookahead_pub.publish(self.create_target_marker())
