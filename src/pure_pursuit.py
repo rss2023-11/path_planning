@@ -18,23 +18,20 @@ class PurePursuit:
     def __init__(self):
 
         # Define subscriber to get current pose
-        # rospy.Subscriber('/pose', PoseStamped, self.pose_callback)
 
         # Define publisher to send drive commands
-        self.drive_pub = rospy.Publisher('/drive', AckermannDriveStamped, queue_size=10)
+        self.odom_topic = rospy.get_param("~odom_topic")
+        self.drive_topic = rospy.get_param("~drive_topic", "/drive")
 
         # Define control parameters
-        self.odom_topic = rospy.get_param("~odom_topic")
         self.lookahead = 3.0 #This is a guess  
         self.linear_speed = 1  
         self.max_angular_speed = 0.34  # Maximum angular speed (rad/s)
         self.wheelbase_length = 0.35  # Distance between front and rear axles of car
         self.trajectory  = utils.LineTrajectory("/followed_trajectory").toPoseArray().poses
         self.traj_sub = rospy.Subscriber("/trajectory/current", PoseArray, self.trajectory_callback, queue_size=1)
-        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=1)
-        
+        self.drive_pub = rospy.Publisher(self.drive_topic, AckermannDriveStamped, queue_size=10)
         self.lookahead_pub = rospy.Publisher("/lookahead", Marker, queue_size=1)
-        
         self.pose_sub = rospy.Subscriber("/pf/pose/odom", Odometry, self.define_robot_pose_callback, queue_size = 1) #pose subscriber--tells you where the robot is
 
         # Define variables to store current position and orientation
@@ -54,12 +51,10 @@ class PurePursuit:
 
         rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
 
-
-        self.lookahead_pub.publish(self.create_target_marker())
-
-        
         if self.target_position:
-            rospy.logwarn("target: {x} , {y}".format(x=repr(self.target_position.x), y=repr(self.target_position.y)))
+            self.lookahead_pub.publish(self.create_target_marker())
+
+            # rospy.logwarn("target: {x} , {y}".format(x=repr(self.target_position.x), y=repr(self.target_position.y)))
             distance = math.sqrt((self.current_position.x - self.target_position.x)**2 + (self.current_position.y - self.target_position.y)**2)
 
             # If the distance is less than the target distance, find a new target point
@@ -83,7 +78,7 @@ class PurePursuit:
             # ack_stamped.drive.steering_angle = 0
 
             # Publish the AckermannDriveStamped message
-            rospy.logwarn(steering_angle)
+            # rospy.logwarn(steering_angle)
             self.drive_pub.publish(ack_stamped)
 
     def create_target_marker(self):
