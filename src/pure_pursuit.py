@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from std_msgs.msg import Header
 import rospy
 import numpy as np
 from geometry_msgs.msg import PoseStamped, Twist, Point, Pose
@@ -21,8 +21,8 @@ class PurePursuit:
 
         # Define publisher to send drive commands
         self.odom_topic = rospy.get_param("~odom_topic")
-        self.drive_topic = rospy.get_param("~drive_topic", "/drive")
-
+        self.drive_topic = rospy.get_param("~drive_topic", "/vesc/ackermann_cmd_mux/input/navigation")
+        
         # Define control parameters
         self.lookahead = 3.0 #This is a guess  
         self.linear_speed = 1  
@@ -48,10 +48,9 @@ class PurePursuit:
         self.orientation = math.atan2(2*(quat.z*quat.w + quat.x*quat.y), 1 - 2*(quat.y**2 + quat.z**2))
             
         self.find_target_point(self.trajectory)
-
         rospy.logwarn('current: {x},  {y}'.format(x=repr(self.current_position.x), y=repr(self.current_position.y)))
 
-        if self.target_position:
+        if self.target_position != None:
             self.lookahead_pub.publish(self.create_target_marker())
 
             # rospy.logwarn("target: {x} , {y}".format(x=repr(self.target_position.x), y=repr(self.target_position.y)))
@@ -72,13 +71,15 @@ class PurePursuit:
 
             # Create an AckermannDriveStamped message with the linear and angular velocities
             ack_stamped = AckermannDriveStamped()
+            ack_stamped.header = Header(stamp=rospy.Time.now())
             ack_stamped.drive.speed = linear_velocity
             # ack_stamped.drive.speed = 0
             ack_stamped.drive.steering_angle = steering_angle
             # ack_stamped.drive.steering_angle = 0
 
             # Publish the AckermannDriveStamped message
-            # rospy.logwarn(steering_angle)
+            # rospy.logwarn("STEER PUBLISHED")
+            # rospy.logwarn(ack_stamped)
             self.drive_pub.publish(ack_stamped)
 
     def create_target_marker(self):
@@ -119,6 +120,7 @@ class PurePursuit:
         nearest_point = None
         
         # waypoint is a POSE
+
         for waypoint in trajectory:
             distance = abs((waypoint.position.x - self.current_position.x)**2 + (waypoint.position.y - self.current_position.y)**2 - self.lookahead)
             if distance < nearest_distance:

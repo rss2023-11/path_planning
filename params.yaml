@@ -1,3 +1,4 @@
 scan_topic: '/scan'
 # drive_topic: '/drive'
 drive_topic: '/vesc/ackermann_cmd_mux/input/navigation'
+safety_topic: '/vesc/low_level/ackermann_cmd_mux/input/safety'
