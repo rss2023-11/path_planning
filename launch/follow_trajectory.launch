@@ -1,10 +1,10 @@
 <launch>
+	<node pkg="safety_controller" name="safety_controller" type="safety_controller_publisher.py" output="screen">
+    	<rosparam command="load" file="$(find safety_controller)/params.yaml"/>
+  	</node>
 	<node pkg="lab6" type="pure_pursuit.py" name="Trajectory_follower">
 		<param name="drive_topic" value="/vesc/ackermann_cmd_mux/input/navigation" />
 		<param name="odom_topic" value="/pf/pose/odom"/>
 	</node>
-	<node pkg="safety_controller" name="safety_controller" type="safety_controller_publisher.py" output="screen">
-    	<rosparam command="load" file="$(find path_planning)/params.yaml"/>
-  	</node>
 </launch>
 
