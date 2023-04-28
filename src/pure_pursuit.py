@@ -22,7 +22,8 @@ class PurePursuit:
         # Define publisher to send drive commands
         self.odom_topic = rospy.get_param("~odom_topic")
         self.drive_topic = rospy.get_param("~drive_topic", "/vesc/ackermann_cmd_mux/input/navigation")
-        
+        rospy.logwarn("DRIVE TOPIC: ")
+        rospy.logwarn(self.drive_topic)
         # Define control parameters
         self.lookahead = 3.0 #This is a guess  
         self.linear_speed = 1  
